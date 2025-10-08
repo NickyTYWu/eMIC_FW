@@ -74,8 +74,9 @@ struct PMD3140_Register page0StatusReg[6]={
 		{0x77,0x00}
 };
 
-struct PMD3140_Register unusedRegister[8]={
+struct PMD3140_Register unusedRegister[9]={
 		{0x00,0x00},
+		{0x01,0x00},
 		{0x15,0xFF},
 		{0x2A,0x00},
 		{0x2F,0x00},
@@ -1127,7 +1128,7 @@ bool writeRegToPCDM3140WithPageParameters(uint8_t *cmd)
 
 bool isUnUsedRegister(uint8_t reg)
 {
-    for(int i=0;i<8;i++)
+    for(int i=0;i<9;i++)
     {
     	if(reg==unusedRegister[i].regAddress)
     		return true;
@@ -1433,22 +1434,17 @@ void init_PCMD3140()
 	{
 		setPage(0);
 
+		wbuf[0]=page0ConfigReg[1].regAddress;
+		wbuf[1]=0x01;
+		eeprom_pcmd3140_i2c_write(PCMD3140_SLAVE_ADDR,wbuf,2);
+
+		LL_mDelay(5);
+
 		wbuf[0]=page0ConfigReg[2].regAddress;
 		wbuf[1]=page0ConfigReg[2].data|0x01;
 		eeprom_pcmd3140_i2c_write(PCMD3140_SLAVE_ADDR,wbuf,2);
 
 		LL_mDelay(10);
-
-		for(int offset=0;offset<PAGE0_REG_MAX_SIZE;offset++)
-		{
-			pageValueBuf[offset]=page0ConfigReg[offset].data;
-		}
-
-		if(writePCMD3140Page(0,pageValueBuf,PAGE0_REG_MAX_SIZE,true)!=0)
-		{
-			init_PCMD3140_fail();
-			return;
-		}
 
 		for(int offset=0;offset<PAGE2_REG_MAX_SIZE;offset++)
 		{
@@ -1478,6 +1474,17 @@ void init_PCMD3140()
 		}
 
 		if(writePCMD3140Page(4,pageValueBuf,PAGE4_REG_MAX_SIZE,true)!=0)
+		{
+			init_PCMD3140_fail();
+			return;
+		}
+
+		for(int offset=0;offset<PAGE0_REG_MAX_SIZE;offset++)
+		{
+			pageValueBuf[offset]=page0ConfigReg[offset].data;
+		}
+
+		if(writePCMD3140Page(0,pageValueBuf,PAGE0_REG_MAX_SIZE,true)!=0)
 		{
 			init_PCMD3140_fail();
 			return;

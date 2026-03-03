@@ -282,11 +282,12 @@ void getMode()
 
 void responeVersion()
 {
-	uint8_t RESPONSE_CMD_BUF[2];
+	uint8_t RESPONSE_CMD_BUF[3];
 
 	RESPONSE_CMD_BUF[0]=0xff;
 	RESPONSE_CMD_BUF[1]=(version&0xff);
-	GenCommand(GET_FW_VERSION_RESPONSE_CMD, RESPONSE_CMD_BUF, 2);
+	RESPONSE_CMD_BUF[2]=DEV_ID_NUMBER;
+	GenCommand(GET_FW_VERSION_RESPONSE_CMD, RESPONSE_CMD_BUF, 3);
 }
 
 
@@ -325,7 +326,7 @@ uint8_t ProcessPacket()
         }
         else
         {
-        	ResponseACK(0xB4,CMD_FAIL);
+            ResponseACK(0xB3,CMD_FAIL);
         }
         break;
         case OTA_UPGRADE_END_CMD:

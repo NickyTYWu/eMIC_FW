@@ -52,7 +52,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
-const char APP[]="FIT_V1BL1_VER_R0001_BETA_00@";
+const char APP[]="FIT_V1BL1_VER_R0002_BETA_00@";
 int version=0;
 int beta=0;
 

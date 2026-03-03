@@ -23,6 +23,7 @@
 #define PAGE0_SIZE 128
 #define PAGE0_CHECKSUM_ADDR         PAGE0_START_ADDR+PAGE0_SIZE-1
 #define DEBUG_MSG_ENABLE_FLAG_ADDR  PAGE0_CHECKSUM_ADDR-1
+#define WATCHDOG_ENABLE_FLAG_ADDR   DEBUG_MSG_ENABLE_FLAG_ADDR-1
 
 #define PAGE2_START_ADDR   PAGE0_START_ADDR+PAGE0_SIZE
 #define PAGE2_SIZE 128
@@ -176,6 +177,8 @@ bool writeNotes(uint8_t *data,uint8_t size);
 void readNotes(uint8_t infoID,uint8_t *data);
 bool writeEnableDebugMsgFlag(uint8_t flag);
 uint8_t readEnableDebugMsgFlag();
+bool writeEnableWatchDogFlag(uint8_t flag);
+uint8_t readEnableWatchDogFlag();
 int8_t writePage(uint8_t blockID,uint8_t *pageBuf,uint8_t numberOfByte,uint8_t pageEESize);
 //int8_t getPage(uint8_t page,uint8_t *pageBuf,uint8_t pageEESize);
 int8_t getPageFromEEprom(uint8_t page,uint8_t *pageBuf,uint8_t pageEESize);

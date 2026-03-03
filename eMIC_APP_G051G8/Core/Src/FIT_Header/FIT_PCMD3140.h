@@ -39,4 +39,5 @@ bool isPCMD3140DataCorrect();
 void init_PCMD3140_Interrupt();
 void PCMD3140_Interrupt_cb();
 void processPCMD3140();
+void resetPCMD3140();
 #endif /* SRC_FIT_HEADER_FIT_PCMD3140_H_ */

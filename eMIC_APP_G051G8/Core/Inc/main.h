@@ -41,6 +41,7 @@ extern "C" {
 #include "stm32g0xx_ll_dma.h"
 #include "stm32g0xx_ll_usart.h"
 #include "stm32g0xx_ll_gpio.h"
+#include "stm32g0xx_ll_iwdg.h"
 
 #if defined(USE_FULL_ASSERT)
 #include "stm32_assert.h"
@@ -69,6 +70,9 @@ extern "C" {
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 void showVersion();
+void IWDG_Init_500ms(void);
+void resetWDG();
+void checkWatchDogReset();
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

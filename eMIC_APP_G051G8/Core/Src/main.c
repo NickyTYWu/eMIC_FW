@@ -50,10 +50,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-const char APP[]="FIT_V1APP_VER_R0003_BETA_00@";
+const char APP[]="FIT_V1APP_VER_R0004_BETA_00@";
 int version=0;
 int beta=0;
-
+bool bWatchdogReset=false;
+bool bWatchdogEnable=false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,6 +99,147 @@ void showVersion()
         FT_printf("Version:R%02d Beta%02d\r\n",version,beta);
 }
 
+void IWDG_Init_500ms(void)
+{
+	if(readEnableWatchDogFlag()==0x01)
+	{
+		bWatchdogEnable=true;
+		/* 1. Enable LSI */
+        LL_RCC_LSI_Enable();
+        while (!LL_RCC_LSI_IsReady());
+
+        /* 2. Enable write access to IWDG registers */
+        LL_IWDG_EnableWriteAccess(IWDG);
+
+        /* 3. Prescaler = 32 */
+        LL_IWDG_SetPrescaler(IWDG, LL_IWDG_PRESCALER_32);
+
+        /* 4. Reload = 500 → 約 500ms */
+        LL_IWDG_SetReloadCounter(IWDG, 500);
+
+        /* 5. Start IWDG */
+        LL_IWDG_Enable(IWDG);
+
+        /* 6. Reload once immediately */
+        LL_IWDG_ReloadCounter(IWDG);
+	}
+}
+
+void resetWDG()
+{
+	if(bWatchdogEnable)
+	{
+	    LL_IWDG_ReloadCounter(IWDG);
+	}
+}
+
+void checkWatchDogReset()
+{
+	bWatchdogReset=false;
+	if (LL_RCC_IsActiveFlag_IWDGRST())
+	{
+		bWatchdogReset=true;
+	}
+
+	LL_RCC_ClearResetFlags();
+}
+
+void GPIO_InitUnusedPins(void)
+{
+
+    LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+    /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+    /* USER CODE END MX_GPIO_Init_1 */
+
+    /* GPIO Ports Clock Enable */
+    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOC);
+    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
+    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_1;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_4;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_5;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /**/
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_7;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/**/
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_15;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_5;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_8;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    /**/
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_8;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	/**/
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_14;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	/**/
+	GPIO_InitStruct.Pin = LL_GPIO_PIN_15;
+	GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+	LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+
+}
 /**
   * @brief  The application entry point.
   * @retval int
@@ -117,20 +259,31 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
+  GPIO_InitUnusedPins();
+
+  checkWatchDogReset();
+
   /* Initialize all configured peripherals */
   GetVersion(&version,&beta,15,25);
   eeprom_pcmd3140_i2c_init();
+
+  IWDG_Init_500ms();
+
   init_DebugMessage();
+
   sensirion_i2c_init();
 
   uint32_t serial;
 
   sht4x_read_serial(&serial);
 
+  FT_printf("Watchdog enable flag:%x,Watchdog reset:%x!!\r\n",bWatchdogEnable,bWatchdogReset);
   FT_printf("sht4x serial number:%lx!!\r\n",serial);
 
   initEEPROM();
+
   init_PCMD3140();
+
   initLED();
   initSysTick();
 
@@ -145,6 +298,8 @@ int main(void)
 	  proccess_rxbuf();
 	  processPCMD3140();
 	  //processLED();
+	  resetWDG();
+
   }
 
 }

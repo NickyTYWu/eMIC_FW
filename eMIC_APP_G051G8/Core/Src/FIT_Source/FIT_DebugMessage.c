@@ -332,11 +332,12 @@ void getMode()
 
 void responeVersion()
 {
-	uint8_t RESPONSE_CMD_BUF[2];
+	uint8_t RESPONSE_CMD_BUF[3];
 
 	RESPONSE_CMD_BUF[0]=(version&0xff00)>>8;
 	RESPONSE_CMD_BUF[1]=(version&0xff);
-	GenCommand(GET_FW_VERSION_RESPONSE_CMD, RESPONSE_CMD_BUF, 2);
+	RESPONSE_CMD_BUF[2]=DEV_ID_NUMBER;
+	GenCommand(GET_FW_VERSION_RESPONSE_CMD, RESPONSE_CMD_BUF, 3);
 }
 
 void responeSensirion()
@@ -755,10 +756,25 @@ bool enableFWLog(uint8_t bEnable)
 	return false;
 }
 
+bool enableWatchdog(uint8_t bEnable)
+{
+
+	if(readEnableWatchDogFlag()!=bEnable)
+	{
+	    if(writeEnableWatchDogFlag(bEnable))
+	    {
+            //NVIC_SystemReset();
+            return true;
+	    }
+	}
+
+	return false;
+}
+
 uint8_t ProcessPacket()
 {
     uint8_t ret = 0;
-
+    resetWDG();
     switch(RCV_PACKET[2])
     {
         case GET_FW_VERSION_CMD:
@@ -812,6 +828,8 @@ uint8_t ProcessPacket()
         case WRITE_PCMD_BLOCK_CMD:
         {
 			setLedNotify(LED_NOTIFY_TYPE_PEOGRAMMING);
+			if(RCV_PACKET[5]==0x01)
+			    resetPCMD3140();
 			uint8_t result=writePCMD3140Page(RCV_PACKET[3],&RCV_PACKET[4],RCV_PACKET[1]-1,false);
 			if(result==2)
 			{
@@ -1103,8 +1121,14 @@ uint8_t ProcessPacket()
 		}
 		break;
 		case 0xB6:
-		UPGRADE_START((uint8_t*)&RCV_PACKET[3],RCV_PACKET[1]-1);
-		ResponseACK(0xB3,CMD_SUCCESS);
+		if(UPGRADE_START((uint8_t*)&RCV_PACKET[3],RCV_PACKET[1]-1))
+		{
+			ResponseACK(0xB3,CMD_SUCCESS);
+		}
+		else
+		{
+			ResponseACK(0xB3,CMD_FAIL);
+		}
 		break;
 		case 0xB7:
 		if(UPGRADE_END((uint8_t*)&RCV_PACKET[3],RCV_PACKET[1]-1))
@@ -1118,6 +1142,16 @@ uint8_t ProcessPacket()
 		break;
 		case 0xF0:
 		enableFWLog(RCV_PACKET[3]);
+		break;
+		case 0xF1:
+		if(enableWatchdog(RCV_PACKET[3]))
+		{
+			ResponseACK(0xF1,CMD_SUCCESS);
+		}
+		else
+		{
+			ResponseACK(0xF1,CMD_FAIL);
+		}
 		break;
         case 0xFF:
         break;

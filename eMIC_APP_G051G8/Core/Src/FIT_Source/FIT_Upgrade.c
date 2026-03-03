@@ -72,9 +72,14 @@ bool UPGRADE_END(uint8_t *body_buffer,uint16_t len)
     return ReturnValue;
 }
 
-void UPGRADE_START(uint8_t *body_buffer,uint16_t len)
+bool UPGRADE_START(uint8_t *body_buffer,uint16_t len)
 {
-    memcpy(&flash_buffer[number_of_data_in_flash_buffer],body_buffer,len);
+	if(!bUpgradeStart)
+	{
+		return false;
+	}
+
+	memcpy(&flash_buffer[number_of_data_in_flash_buffer],body_buffer,len);
 
     number_of_data_in_flash_buffer+=len;
 
@@ -86,6 +91,8 @@ void UPGRADE_START(uint8_t *body_buffer,uint16_t len)
 
         number_of_data_in_flash_buffer=0;
     }
+
+    return true;
 }
 
 bool UPGRADE_INIT(uint8_t *CMDBuf)
@@ -95,7 +102,10 @@ bool UPGRADE_INIT(uint8_t *CMDBuf)
 
     number_of_data_in_flash_buffer=0;
 
-    bUpgradeStart=true;
+    if(upgradeStartAddress>=APPLICATION_ADDRESS&&CMDBuf[8]==DEV_ID_NUMBER)
+		bUpgradeStart=true;
+	else
+		bUpgradeStart=false;
 
     return bUpgradeStart;
 }

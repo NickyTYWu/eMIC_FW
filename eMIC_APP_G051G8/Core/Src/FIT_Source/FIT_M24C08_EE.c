@@ -683,6 +683,8 @@ int8_t getPageFromEEprom(uint8_t blockID,uint8_t *pageBuf,uint8_t pageEESize)
 	int offset=0;
 	int8_t result=0;
 
+	resetWDG();
+
 	FT_printf("getPageFromEEprom blockID:%d,EE page size=%d\r\n",blockID,pageEESize);
 	if(blockID==BLOCK_ID_PAGE0)
 	{
@@ -761,6 +763,8 @@ int8_t writePage(uint8_t blockID,uint8_t *pageBuf,uint8_t numberOfByte,uint8_t p
 	FT_printf("write page blockID:%d,numberOfByte:%d,EE page size%x\r\n",blockID,numberOfByte,pageEESize);
 
 	memset(tempBuf,0xff,pageEESize);
+
+	resetWDG();
 
 	for(offset=0;offset<numberOfByte;offset++)
 	{
@@ -844,6 +848,28 @@ uint8_t readEnableDebugMsgFlag()
 
 
     FIT_EE_Read(DEBUG_MSG_ENABLE_FLAG_ADDR,data,1);
+
+    return data[0];
+}
+
+bool writeEnableWatchDogFlag(uint8_t flag)
+{
+	uint8_t data[1];
+
+	data[0]=flag;
+
+	if(FIT_EE_Write(WATCHDOG_ENABLE_FLAG_ADDR,data,1)!=0)
+			return false;
+
+	return true;
+}
+
+uint8_t readEnableWatchDogFlag()
+{
+	uint8_t data[1];
+
+
+    FIT_EE_Read(WATCHDOG_ENABLE_FLAG_ADDR,data,1);
 
     return data[0];
 }

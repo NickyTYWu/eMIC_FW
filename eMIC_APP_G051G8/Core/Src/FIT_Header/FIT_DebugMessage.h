@@ -43,6 +43,7 @@ void responseEEpromOneByteRead(uint16_t addr);
 void responeReadModelNumber(uint8_t *cmd);
 void ResponseDeviceDebugMessage(uint8_t *buf,uint8_t len);
 bool enableFWLog(uint8_t bEnable);
+bool enableWatchdog(uint8_t bEnable);
 uint8_t calculateChecksum(uint8_t *data,uint8_t len);
 bool isbEnterUpgradeMode();
 

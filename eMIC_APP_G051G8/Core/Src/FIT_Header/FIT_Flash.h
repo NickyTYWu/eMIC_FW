@@ -20,6 +20,7 @@
 #define FLASH_PAGE_SIZE                 0x00000800U    /*!< FLASH Page Size, 2 KBytes */
 #define INAPP        0x01
 #define INBOOTLOADER 0x02
+#define DEV_ID_NUMBER 0x01
 
 #define FLASH_KEY1                      0x45670123U   /*!< Flash key1 */
 #define FLASH_KEY2                      0xCDEF89ABU   /*!< Flash key2: used with FLASH_KEY1

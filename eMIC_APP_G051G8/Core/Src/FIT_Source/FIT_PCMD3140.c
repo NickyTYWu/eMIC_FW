@@ -848,6 +848,8 @@ void dumpPage(uint8_t page)
     uint8_t sleepReg=0;
     bool bRestore=false;
 
+    resetWDG();
+
     if(page!=0)
     {
       cmd[0] = 0;
@@ -900,7 +902,9 @@ void dumpPage(uint8_t page)
 
     for(int i=0;i<pageSize;i++)
     {
-	    wbuf[0]=tempBuf[i].regAddress;
+        resetWDG();
+
+        wbuf[0]=tempBuf[i].regAddress;
 	    if(eeprom_pcmd3140_i2c_write(PCMD3140_SLAVE_ADDR,wbuf,1)!=0)
 	    {
 		    i2cTimeoutCounter++;
@@ -911,7 +915,7 @@ void dumpPage(uint8_t page)
 		    }
 		    else
 		    {
-			    continue;
+                continue;
 		    }
 	    }
 
@@ -927,7 +931,7 @@ void dumpPage(uint8_t page)
 		    }
 		    else
 		    {
-			    continue;
+                continue;
 		    }
 	    }
 	    if(tempBuf[i].data!=rbuf[0])
@@ -984,6 +988,7 @@ int8_t getPageFromSRAM(uint8_t page,uint8_t *pageBuf,uint8_t pageSize)
 
 	for(int i=0;i<pageSize;i++)
 	{
+		resetWDG();
 		pageBuf[i]=tempBuf[i].data;
 		FT_printf("tempBuf[%d].reg:%x\r\n",i,tempBuf[i].regAddress);
 		FT_printf("pageBuf[%d]:%x\r\n",i,pageBuf[i]);
@@ -1144,6 +1149,8 @@ uint8_t writePCMD3140Page(uint8_t page,uint8_t *pageBuf,uint8_t bufSize,bool byp
 	struct PMD3140_Register *pageConfigReg=NULL;
 	uint8_t numberOfReg=0;
 
+	resetWDG();
+
 	if(page == 0)
 	{
 		pageConfigReg=page0ConfigReg;
@@ -1221,6 +1228,7 @@ uint8_t writePCMD3140Page(uint8_t page,uint8_t *pageBuf,uint8_t bufSize,bool byp
 					}
 					else
 					{
+						resetWDG();
 						continue;
 					}
 				}
@@ -1372,6 +1380,18 @@ void init_PCMD3140_fail()
     setLedNotify(LED_NOTIFY_TYPE_PCMD_INIT_FAIL);
 }
 
+void resetPCMD3140()
+{
+	uint8_t wbuf[2];
+	setPage(0);
+
+	wbuf[0]=0x01;
+	wbuf[1]=0x01;
+	eeprom_pcmd3140_i2c_write(PCMD3140_SLAVE_ADDR,wbuf,2);
+
+	LL_mDelay(5);
+}
+
 void init_PCMD3140()
 {
 	uint8_t wbuf[2];
@@ -1389,7 +1409,6 @@ void init_PCMD3140()
 		}
 		bPCMD3140Page0DataCorrect=true;
 	}
-
 
 	if(getPageFromEEprom(BLOCK_ID_PAGE2,pageValueBuf,PAGE2_SIZE)==1)
 	{

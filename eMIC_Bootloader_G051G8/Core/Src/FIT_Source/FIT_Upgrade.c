@@ -105,10 +105,10 @@ bool UPGRADE_INIT(uint8_t *CMDBuf)
 
     number_of_data_in_flash_buffer=0;
 
-    if(upgradeStartAddress>=APPLICATION_ADDRESS)
+    if(upgradeStartAddress>=APPLICATION_ADDRESS&&CMDBuf[8]==DEV_ID_NUMBER)
         bUpgradeStart=true;
     else
-    	bUpgradeStart=false;
+	    bUpgradeStart=false;
 
     return bUpgradeStart;
 }

@@ -135,6 +135,13 @@ const char* sht4x_get_driver_version(void);
  */
 uint8_t sht4x_get_configured_address(void);
 
+int16_t fit_sht4x_read(uint16_t* temperatureRaw, uint16_t* humidityRaw);
+int16_t fit_sht4x_measure(uint8_t cmd);
+int16_t fit_sht4x_measure_blocking_read(uint16_t* temperatureRaw, uint16_t* humidityRaw,uint8_t cmd);
+int16_t fit_sht4x_soft_reset();
+void startMeasure(uint8_t cmd);
+void processSHT4xMeasure();
+bool isSafetyTemp();
 #ifdef __cplusplus
 }
 #endif

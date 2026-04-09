@@ -46,5 +46,7 @@ bool enableFWLog(uint8_t bEnable);
 bool enableWatchdog(uint8_t bEnable);
 uint8_t calculateChecksum(uint8_t *data,uint8_t len);
 bool isbEnterUpgradeMode();
+void responeSensirionRaw(uint16_t temperatureRaw,uint16_t humidityRaw,uint8_t result);
+void notifySensirion(int32_t temperature, int32_t humidity);
 
 #endif /* SRC_FIT_HEADER_FIT_DEBUGMESSAGE_H_ */

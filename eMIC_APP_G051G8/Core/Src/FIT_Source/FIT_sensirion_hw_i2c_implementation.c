@@ -157,8 +157,11 @@ void sensirion_sleep_usec(uint32_t useconds)
     if (useconds % 1000 > 0) {
         msec++;
     }
-
-    LL_mDelay(msec);
+    for(int i=0;i<msec;i+=100)
+    {
+        resetWDG();
+        LL_mDelay(100);
+    }
 }
 
 int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,uint16_t timeout)
@@ -169,9 +172,10 @@ int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_BUSY(I2C2) == SET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
-            FT_printf("i2c2 timeout\r\n");
+            FT_printf("w i2c2 timeout\r\n");
             setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
             sensirion_i2c_init();
             return -1;
@@ -185,9 +189,10 @@ int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
         while(LL_I2C_IsActiveFlag_TXE(I2C2)== RESET)
         {
             LL_mDelay(1);
+            resetWDG();
             if(cnt++ > timeout)
             {
-    	        FT_printf("i2c2 timeout\r\n");
+                FT_printf("w i2c2 timeout\r\n");
     	        setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
     	        sensirion_i2c_init();
                 return -1;
@@ -199,9 +204,10 @@ int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_STOP(I2C2)==RESET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
-    	    FT_printf("i2c2 timeout\r\n");
+            FT_printf("w i2c2 timeout\r\n");
     	    setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
     	    sensirion_i2c_init();
             return -1;
@@ -223,9 +229,10 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_BUSY(I2C2) == SET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
-          FT_printf("i2c2 timeout\r\n");
+          FT_printf("r1 i2c2 timeout\r\n");
           setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
           sensirion_i2c_init();
           return -1;
@@ -239,9 +246,10 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
         while(LL_I2C_IsActiveFlag_RXNE(I2C2) == RESET)
         {
             LL_mDelay(1);
+            resetWDG();
             if(cnt++ > timeout)
             {
-                FT_printf("i2c2 timeout\r\n");
+                FT_printf("r2 i2c2 timeout\r\n");
                 setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
                 sensirion_i2c_init();
                 return -1;
@@ -254,9 +262,10 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_STOP(I2C2)==RESET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
-            FT_printf("i2c2 timeout\r\n");
+            FT_printf("r3 i2c2 timeout\r\n");
             setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
             sensirion_i2c_init();
             return -1;
@@ -268,6 +277,22 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     (I2C2->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN)));
 
     return 0;
+}
+
+void getTemperatureAndHumidityRaw(uint16_t *temperatureRaw,uint16_t *humidityRaw,uint8_t cmd)
+{
+	/* Measure temperature and relative humidity and store into variables
+	   * temperature, humidity (each output multiplied by 1000).
+	*/
+	int8_t ret = fit_sht4x_measure_blocking_read(temperatureRaw, humidityRaw,cmd);
+
+	//FT_printf("temperature:%d,humidity:%d\r\n",*temperature,*humidity);
+	if (ret != STATUS_OK)
+	{
+		*temperatureRaw=0;
+		*humidityRaw=0;
+		FT_printf("error reading measurement raw\n");
+	}
 }
 
 void getTemperatureAndHumidity(int32_t *temperature,int32_t *humidity)

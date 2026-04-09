@@ -832,20 +832,19 @@ int8_t writePage(uint8_t blockID,uint8_t *pageBuf,uint8_t numberOfByte,uint8_t p
 
 bool writeEnableDebugMsgFlag(uint8_t flag)
 {
-	uint8_t data[1];
+    uint8_t data[1];
 
-	data[0]=flag;
+    data[0]=flag;
 
-	if(FIT_EE_Write(DEBUG_MSG_ENABLE_FLAG_ADDR,data,1)!=0)
-			return false;
+    if(FIT_EE_Write(DEBUG_MSG_ENABLE_FLAG_ADDR,data,1)!=0)
+        return false;
 
-	return true;
+    return true;
 }
 
 uint8_t readEnableDebugMsgFlag()
 {
-	uint8_t data[1];
-
+    uint8_t data[1];
 
     FIT_EE_Read(DEBUG_MSG_ENABLE_FLAG_ADDR,data,1);
 
@@ -854,24 +853,37 @@ uint8_t readEnableDebugMsgFlag()
 
 bool writeEnableWatchDogFlag(uint8_t flag)
 {
-	uint8_t data[1];
+    uint8_t data[1];
 
-	data[0]=flag;
+    data[0]=flag;
 
-	if(FIT_EE_Write(WATCHDOG_ENABLE_FLAG_ADDR,data,1)!=0)
-			return false;
+    if(FIT_EE_Write(WATCHDOG_ENABLE_FLAG_ADDR,data,1)!=0)
+        return false;
 
-	return true;
+    return true;
 }
 
 uint8_t readEnableWatchDogFlag()
 {
-	uint8_t data[1];
-
+    uint8_t data[1];
 
     FIT_EE_Read(WATCHDOG_ENABLE_FLAG_ADDR,data,1);
 
     return data[0];
+}
+
+bool writeSht4xCalValue(uint8_t *calData)
+{
+
+    if(FIT_EE_Write(SHT4X_CAL_DATA_ADDR,calData,8)!=0)
+        return false;
+
+    return true;
+}
+
+void readSht4xCalValue(uint8_t *calData)
+{
+    FIT_EE_Read(SHT4X_CAL_DATA_ADDR,calData,8);
 }
 
 bool commandWriteOneByteToEE(uint16_t addr,uint8_t *data)

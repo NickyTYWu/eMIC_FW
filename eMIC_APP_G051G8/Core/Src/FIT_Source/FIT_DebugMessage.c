@@ -16,6 +16,7 @@
 #include "Command.h"
 #include "ftm.h"
 #include "ftm_ringbuff.h"
+#include "sht4x.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -340,24 +341,85 @@ void responeVersion()
 	GenCommand(GET_FW_VERSION_RESPONSE_CMD, RESPONSE_CMD_BUF, 3);
 }
 
+void responeSht4xSerialNumber()
+{
+    uint32_t serialNumber;
+    uint8_t RESPONSE_CMD_BUF[4];
+
+    sht4x_read_serial(&serialNumber);
+
+    RESPONSE_CMD_BUF[0]=(serialNumber&0xff000000)>>24;
+    RESPONSE_CMD_BUF[1]=(serialNumber&0x00ff0000)>>16;
+    RESPONSE_CMD_BUF[2]=(serialNumber&0x0000ff00)>>8;
+    RESPONSE_CMD_BUF[3]=(serialNumber&0x000000ff);
+
+    GenCommand(GET_SHT4X_SERIAL_NUM_RESPONSE_CMD, RESPONSE_CMD_BUF, 4);
+}
+
+void responeSensirionRaw(uint16_t temperatureRaw,uint16_t humidityRaw,uint8_t result)
+{
+    uint8_t RESPONSE_CMD_BUF[5];
+
+    RESPONSE_CMD_BUF[0]=(temperatureRaw&0xff00)>>8;
+    RESPONSE_CMD_BUF[1]=(temperatureRaw&0xff);
+    RESPONSE_CMD_BUF[2]=(humidityRaw&0xff00)>>8;
+    RESPONSE_CMD_BUF[3]=(humidityRaw&0xff);
+    RESPONSE_CMD_BUF[4]=result;
+
+    GenCommand(GET_TH_RESPONSE_CMD, RESPONSE_CMD_BUF, 5);
+}
+
+void responeSensirionWithCMD(uint8_t cmd)
+{
+    uint16_t temperatureRaw, humidityRaw;
+    uint8_t RESPONSE_CMD_BUF[4];
+
+    getTemperatureAndHumidityRaw(&temperatureRaw,&humidityRaw,cmd);
+    FT_printf("temperatureRaw:%x humidityRaw:x\r\n",temperatureRaw,humidityRaw);
+    RESPONSE_CMD_BUF[0]=(temperatureRaw&0xff00)>>8;
+    RESPONSE_CMD_BUF[1]=(temperatureRaw&0xff);
+    RESPONSE_CMD_BUF[2]=(humidityRaw&0xff00)>>8;
+    RESPONSE_CMD_BUF[3]=(humidityRaw&0xff);
+
+    GenCommand(GET_TH_RESPONSE_CMD, RESPONSE_CMD_BUF, 4);
+}
+
+void notifySensirion(int32_t temperature, int32_t humidity)
+{
+    uint8_t RESPONSE_CMD_BUF[8];
+
+    getTemperatureAndHumidity(&temperature,&humidity);
+
+    RESPONSE_CMD_BUF[0]=(temperature&0xff000000)>>24;
+    RESPONSE_CMD_BUF[1]=(temperature&0x00ff0000)>>16;
+    RESPONSE_CMD_BUF[2]=(temperature&0x0000ff00)>>8;
+    RESPONSE_CMD_BUF[3]=(temperature&0x000000ff);
+
+    RESPONSE_CMD_BUF[4]=(humidity&0xff000000)>>24;
+    RESPONSE_CMD_BUF[5]=(humidity&0x00ff0000)>>16;
+    RESPONSE_CMD_BUF[6]=(humidity&0x0000ff00)>>8;
+    RESPONSE_CMD_BUF[7]=(humidity&0x000000ff);
+
+    GenCommand(SHT4X_NOTIFY_CMD, RESPONSE_CMD_BUF, 8);
+}
 void responeSensirion()
 {
-	int32_t temperature, humidity;
-	uint8_t RESPONSE_CMD_BUF[8];
+    int32_t temperature, humidity;
+    uint8_t RESPONSE_CMD_BUF[8];
 
-	getTemperatureAndHumidity(&temperature,&humidity);
+    getTemperatureAndHumidity(&temperature,&humidity);
 
-	RESPONSE_CMD_BUF[0]=(temperature&0xff000000)>>24;
-	RESPONSE_CMD_BUF[1]=(temperature&0x00ff0000)>>16;
-	RESPONSE_CMD_BUF[2]=(temperature&0x0000ff00)>>8;
-	RESPONSE_CMD_BUF[3]=(temperature&0x000000ff);
+    RESPONSE_CMD_BUF[0]=(temperature&0xff000000)>>24;
+    RESPONSE_CMD_BUF[1]=(temperature&0x00ff0000)>>16;
+    RESPONSE_CMD_BUF[2]=(temperature&0x0000ff00)>>8;
+    RESPONSE_CMD_BUF[3]=(temperature&0x000000ff);
 
-	RESPONSE_CMD_BUF[4]=(humidity&0xff000000)>>24;
-	RESPONSE_CMD_BUF[5]=(humidity&0x00ff0000)>>16;
-	RESPONSE_CMD_BUF[6]=(humidity&0x0000ff00)>>8;
-	RESPONSE_CMD_BUF[7]=(humidity&0x000000ff);
+    RESPONSE_CMD_BUF[4]=(humidity&0xff000000)>>24;
+    RESPONSE_CMD_BUF[5]=(humidity&0x00ff0000)>>16;
+    RESPONSE_CMD_BUF[6]=(humidity&0x0000ff00)>>8;
+    RESPONSE_CMD_BUF[7]=(humidity&0x000000ff);
 
-	GenCommand(GET_TH_RESPONSE_CMD, RESPONSE_CMD_BUF, 8);
+    GenCommand(GET_TH_RESPONSE_CMD, RESPONSE_CMD_BUF, 8);
 }
 
 void responeDeviceID()
@@ -771,6 +833,25 @@ bool enableWatchdog(uint8_t bEnable)
 	return false;
 }
 
+bool writeCal(uint8_t *calData)
+{
+    if(writeSht4xCalValue(calData))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void responseReadCal()
+{
+    uint8_t RESPONSE_CMD_BUF[8];
+
+    readSht4xCalValue(&RESPONSE_CMD_BUF[0]);
+
+    GenCommand(READ_SHT4X_CAL_RESPONSE_CMD, RESPONSE_CMD_BUF,8);
+}
+
 uint8_t ProcessPacket()
 {
     uint8_t ret = 0;
@@ -781,7 +862,10 @@ uint8_t ProcessPacket()
         responeVersion();
         break;
         case GET_TH_CMD:
-        responeSensirion();
+        if(RCV_PACKET[1]==0x01)
+            responeSensirion();
+        else
+            startMeasure(RCV_PACKET[3]);
         break;
         case WRITE_EEPROM_BLOCK_CMD:
         {
@@ -875,6 +959,32 @@ uint8_t ProcessPacket()
         case READ_PCMD_REG_WITH_PAGE_PARAMETERS_CMD:
         responeReadRegWithPageParameters(&RCV_PACKET[3]);
         break;
+        case GET_SHT4X_SERIAL_NUM_CMD:
+        responeSht4xSerialNumber();
+        break;
+        case SHT4X_SOFT_RESET_CMD:
+        if (fit_sht4x_soft_reset() != STATUS_OK)
+        {
+            ResponseACK(SHT4X_SOFT_RESET_CMD,CMD_FAIL);
+        }
+        else
+        {
+            ResponseACK(SHT4X_SOFT_RESET_CMD,CMD_SUCCESS);
+        }
+        break;
+        case WRITE_SHT4X_CAL_CMD:
+        if(writeCal(&RCV_PACKET[3]))
+        {
+            ResponseACK(WRITE_SHT4X_CAL_CMD,CMD_SUCCESS);
+        }
+        else
+        {
+            ResponseACK(WRITE_SHT4X_CAL_CMD,CMD_FAIL);
+        }
+        break;
+        case READ_SHT4X_CAL_CMD:
+        responseReadCal();
+		break;
 #if 0
         case WRITE_MODEL_NUMBER_CMD:
         if(writeModelNumber(RCV_PACKET[3],&RCV_PACKET[4],RCV_PACKET[PAYLOADLEN]-2))

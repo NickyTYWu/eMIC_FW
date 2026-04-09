@@ -42,6 +42,9 @@
 #include "sensirion_arch_config.h"
 #include "sensirion_common.h"
 #include "sensirion_i2c.h"
+#include "FIT_DebugMessage.h"
+#include "FIT_SysTick.h"
+#include "FIT_sensirion_hw_i2c_implementation.h"
 
 /* all measurement commands return T (CRC) RH (CRC) */
 #define SHT4X_CMD_MEASURE_HPM 0xFD
@@ -53,6 +56,161 @@
 
 static uint8_t sht4x_cmd_measure = SHT4X_CMD_MEASURE_HPM;
 static uint16_t sht4x_cmd_measure_delay_us = SHT4X_MEASUREMENT_DURATION_USEC;
+
+
+int16_t fit_sht4x_read(uint16_t* temperatureRaw, uint16_t* humidityRaw)
+{
+    uint16_t words[2];
+
+    int16_t ret = sensirion_i2c_read_words(SHT4X_ADDRESS, words,
+                                           SENSIRION_NUM_WORDS(words));
+
+    *temperatureRaw = words[0];
+    *humidityRaw = words[1];
+
+    return ret;
+}
+
+int16_t fit_sht4x_soft_reset()
+{
+
+    uint8_t cmd=0x94;
+
+    return sensirion_i2c_write(SHT4X_ADDRESS, &cmd, 1);
+}
+
+int16_t fit_sht4x_measure(uint8_t cmd)
+{
+    return sensirion_i2c_write(SHT4X_ADDRESS, &cmd, 1);
+}
+
+bool bMeasureCommandSend=false;
+bool bMeasureComplete=true;
+bool heatingCMD=false;
+uint8_t currentMeasureCMD;
+uint32_t blockingTime;
+uint32_t startTickCount;
+uint8_t reTryCount=0;
+
+bool isSafetyTemp()
+{
+    int32_t temperature, humidity;
+
+    getTemperatureAndHumidity(&temperature,&humidity);
+
+    notifySensirion(temperature, humidity);
+
+    if(temperature>=65000)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void startMeasure(uint8_t cmd)
+{
+    if(!bMeasureComplete)
+        return;
+
+    bMeasureCommandSend=true;
+    bMeasureComplete=false;
+    currentMeasureCMD=cmd;
+
+    if(cmd == 0x39 || cmd == 0x2f || cmd ==0x1E)
+    {
+        blockingTime=1100;
+        if(!isSafetyTemp())
+        {
+            return;
+        }
+    }
+    else if(cmd == 0x32 || cmd == 0x24 || cmd ==0x15)
+    {
+        blockingTime=120;
+        if(!isSafetyTemp())
+        {
+            return;
+        }
+    }
+    else if(cmd == 0xFD)
+    {
+        blockingTime=10;
+    }
+    else if(cmd == 0xF6)
+    {
+        blockingTime=5;
+    }
+    else if(cmd == 0xF6)
+    {
+        blockingTime=2;
+    }
+}
+
+void processSHT4xMeasure()
+{
+    if(bMeasureCommandSend)
+    {
+        bMeasureCommandSend=false;
+
+        fit_sht4x_measure(currentMeasureCMD);
+
+        startTickCount=HAL_GetTick();
+    }
+    else
+    {
+        if(!bMeasureComplete)
+        {
+            if(HAL_GetTick()-startTickCount>=blockingTime)
+            {
+                uint16_t temperatureRaw, humidityRaw;
+                int8_t ret=fit_sht4x_read(&temperatureRaw, &humidityRaw);
+                uint8_t responeResult=0x01;
+                reTryCount=0;
+
+                while(ret != STATUS_OK)
+                {
+                    ret=fit_sht4x_read(&temperatureRaw, &humidityRaw);
+                    reTryCount++;
+                    if(reTryCount>=2)
+                    {
+                        break;
+                    }
+                }
+
+                if (ret != STATUS_OK)
+                {
+                    temperatureRaw=0;
+                    humidityRaw=0;
+                    responeResult=0x00;
+                    FT_printf("error reading measurement raw\n");
+
+                }
+
+                responeSensirionRaw(temperatureRaw,humidityRaw,responeResult);
+                bMeasureComplete=true;
+            }
+        }
+
+    }
+}
+
+int16_t fit_sht4x_measure_blocking_read(uint16_t* temperatureRaw, uint16_t* humidityRaw,uint8_t cmd) {
+    int16_t ret;
+
+    ret = fit_sht4x_measure(cmd);
+    if (ret)
+        return ret;
+
+    if(cmd == 0x39 || cmd == 0x2f || cmd ==0x1E)
+        sensirion_sleep_usec(1100000);
+    else if(cmd == 0x32 || cmd == 0x24 || cmd ==0x15)
+        sensirion_sleep_usec(110000);
+    else
+        sensirion_sleep_usec(SHT4X_MEASUREMENT_DURATION_USEC);
+
+    return fit_sht4x_read(temperatureRaw, humidityRaw);
+}
 
 int16_t sht4x_measure_blocking_read(int32_t* temperature, int32_t* humidity) {
     int16_t ret;

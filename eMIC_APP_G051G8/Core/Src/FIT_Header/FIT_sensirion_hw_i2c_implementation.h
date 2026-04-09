@@ -21,4 +21,5 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
 int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,uint16_t timeout);
 void getTemperatureAndHumidity();
 void getTemperatureAndHumidity(int32_t *temperature,int32_t *humidity);
+void getTemperatureAndHumidityRaw(uint16_t *temperatureRaw,uint16_t *humidityRaw,uint8_t cmd);
 #endif /* SRC_FIT_HEADER_FIT_SENSIRION_HW_I2C_IMPLEMENTATION_H_ */

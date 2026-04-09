@@ -117,6 +117,13 @@ extern "C" {
 #define WRITE_NOTE_CMD                                   0x44
 #define READ_NOTE_CMD                                    0x45
 #define READ_NOTE_RESPONSE_CMD                           0x46
+#define GET_SHT4X_SERIAL_NUM_CMD                         0x47
+#define GET_SHT4X_SERIAL_NUM_RESPONSE_CMD                0x48
+#define SHT4X_SOFT_RESET_CMD                             0x49
+#define SHT4X_NOTIFY_CMD                                 0x4A
+#define WRITE_SHT4X_CAL_CMD                              0x4B
+#define READ_SHT4X_CAL_CMD                               0x4C
+#define READ_SHT4X_CAL_RESPONSE_CMD                      0x4D
 #define REBOOT_CMD                                       0xAA
 #define GATMODE_CMD                                      0xB0
 #define OTA_UPGRADE_INIT_CMD                             0xB2

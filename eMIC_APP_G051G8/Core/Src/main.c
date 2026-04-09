@@ -297,6 +297,7 @@ int main(void)
   {
 	  proccess_rxbuf();
 	  processPCMD3140();
+	  processSHT4xMeasure();
 	  //processLED();
 	  resetWDG();
 

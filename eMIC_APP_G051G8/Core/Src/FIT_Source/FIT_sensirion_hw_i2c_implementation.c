@@ -145,6 +145,11 @@ int8_t sensirion_i2c_write(uint8_t address, const uint8_t* data,
     return (int8_t)FIT_I2C2_Master_Transmit((uint16_t)(address << 1),(uint8_t*)data, count, 100);
 }
 
+
+int8_t DPS368_IsDeviceReady(uint8_t address, const uint8_t* data,
+                           uint16_t count) {
+	return (int8_t)FIT_I2C2_Master_Transmit((uint16_t)(address << 1),(uint8_t*)data, count, 20);
+}
 /**
  * Sleep for a given number of microseconds. The function should delay the
  * execution for at least the given time, but may also sleep longer.
@@ -232,12 +237,12 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
         resetWDG();
         if(cnt++ > timeout)
         {
-          FT_printf("r1 i2c2 timeout\r\n");
-          setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
-          sensirion_i2c_init();
-          return -1;
-        }
-    }
+            FT_printf("r1 i2c2 timeout\r\n");
+            setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
+            sensirion_i2c_init();
+            return -1;
+         }
+     }
 
     LL_I2C_HandleTransfer(I2C2, device_id, LL_I2C_ADDRSLAVE_7BIT, size, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_READ);
 
@@ -279,36 +284,76 @@ int8_t FIT_I2C2_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     return 0;
 }
 
+bool I2C2_LL_IsDeviceReady(uint8_t addr,uint16_t timeout)
+{
+
+    uint16_t cnt = 0;
+
+    if (LL_I2C_IsActiveFlag_BUSY(I2C2))
+        return false;
+
+    LL_I2C_HandleTransfer(I2C2,
+                          addr << 1,
+                          LL_I2C_ADDRSLAVE_7BIT,
+                          0,
+                          LL_I2C_MODE_AUTOEND,
+                          LL_I2C_GENERATE_START_WRITE);
+
+    while (!LL_I2C_IsActiveFlag_STOP(I2C2))
+    {
+        LL_mDelay(1);
+        resetWDG();
+        if(cnt++ > timeout)
+        {
+            FT_printf("i2c2 IsDeviceReady timeout\r\n");
+            sensirion_i2c_init();
+            return false;
+        }
+
+        if (LL_I2C_IsActiveFlag_NACK(I2C2))
+        {
+            LL_I2C_ClearFlag_NACK(I2C2);
+            LL_I2C_GenerateStopCondition(I2C2);
+            sensirion_i2c_init();
+            return false;
+        }
+    }
+
+    LL_I2C_ClearFlag_STOP(I2C2);
+    (I2C2->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN)));
+    return true;
+}
+
 void getTemperatureAndHumidityRaw(uint16_t *temperatureRaw,uint16_t *humidityRaw,uint8_t cmd)
 {
-	/* Measure temperature and relative humidity and store into variables
-	   * temperature, humidity (each output multiplied by 1000).
-	*/
-	int8_t ret = fit_sht4x_measure_blocking_read(temperatureRaw, humidityRaw,cmd);
+    /* Measure temperature and relative humidity and store into variables
+	* temperature, humidity (each output multiplied by 1000).
+    */
+    int8_t ret = fit_sht4x_measure_blocking_read(temperatureRaw, humidityRaw,cmd);
 
-	//FT_printf("temperature:%d,humidity:%d\r\n",*temperature,*humidity);
-	if (ret != STATUS_OK)
-	{
-		*temperatureRaw=0;
-		*humidityRaw=0;
-		FT_printf("error reading measurement raw\n");
-	}
+    //FT_printf("temperature:%d,humidity:%d\r\n",*temperature,*humidity);
+    if (ret != STATUS_OK)
+    {
+        *temperatureRaw=0;
+        *humidityRaw=0;
+        FT_printf("error reading measurement raw\n");
+    }
 }
 
 void getTemperatureAndHumidity(int32_t *temperature,int32_t *humidity)
 {
-	/* Measure temperature and relative humidity and store into variables
-	   * temperature, humidity (each output multiplied by 1000).
-	*/
-	int8_t ret = sht4x_measure_blocking_read(temperature, humidity);
+    /* Measure temperature and relative humidity and store into variables
+	 * temperature, humidity (each output multiplied by 1000).
+    */
+    int8_t ret = sht4x_measure_blocking_read(temperature, humidity);
 
-	//FT_printf("temperature:%d,humidity:%d\r\n",*temperature,*humidity);
-	if (ret != STATUS_OK)
-	{
-		*temperature=-555555;
-		*humidity=-555555;
-		FT_printf("error reading measurement\n");
-	}
+    FT_printf("temperature:%d,humidity:%d\r\n",*temperature,*humidity);
+    if (ret != STATUS_OK)
+    {
+        *temperature=-555555;
+        *humidity=-555555;
+        FT_printf("error reading measurement\n");
+    }
 }
 
 

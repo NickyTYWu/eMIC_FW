@@ -782,8 +782,19 @@ int8_t writePage(uint8_t blockID,uint8_t *pageBuf,uint8_t numberOfByte,uint8_t p
 
 	if(blockID==BLOCK_ID_PAGE0)
 	{
+		uint8_t calData[8];
+		uint8_t SBM100Reg[18];
 		startAddr=PAGE0_START_ADDR;
-		tempBuf[pageEESize-1]=checksum;
+		tempBuf[PAGE0_CHECKSUM_ADDR]=checksum;
+		tempBuf[DEBUG_MSG_ENABLE_FLAG_ADDR]=readEnableDebugMsgFlag();
+		tempBuf[WATCHDOG_ENABLE_FLAG_ADDR]=readEnableWatchDogFlag();
+
+
+		readSht4xCalValue(calData);
+		memcpy(&tempBuf[SHT4X_CAL_DATA_ADDR],calData,8);
+
+		readSBM100AllReg(SBM100Reg);
+		memcpy(&tempBuf[SMB100_REG_DATA_ADDR],SBM100Reg,18);
 	}
 	else if(blockID==BLOCK_ID_PAGE2)
 	{
@@ -884,6 +895,33 @@ bool writeSht4xCalValue(uint8_t *calData)
 void readSht4xCalValue(uint8_t *calData)
 {
     FIT_EE_Read(SHT4X_CAL_DATA_ADDR,calData,8);
+}
+
+bool writeSBM100AllREG(uint8_t *REG)
+{
+
+    uint8_t tempReg[19];
+
+    memcpy(tempReg,REG,18);
+    tempReg[18]=0xAA;
+#if 0
+    for(int i=0;i<19;i+=1)
+    {
+        FT_printf("tempReg[%d]=%x\r\n",i,tempReg[i]);
+    }
+#endif
+	if(writeEE(SMB100_REG_DATA_ADDR,tempReg,19)==false)
+        return false;
+
+    return true;
+}
+
+bool readSBM100AllReg(uint8_t *REG)
+{
+    if(FIT_EE_Read(SMB100_REG_DATA_ADDR,REG,19)!=0)
+        return false;
+
+    return true;
 }
 
 bool commandWriteOneByteToEE(uint16_t addr,uint8_t *data)

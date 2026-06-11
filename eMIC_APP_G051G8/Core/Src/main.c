@@ -27,6 +27,8 @@
 #include "FIT_LED.h"
 #include "FIT_sensirion_hw_i2c_implementation.h"
 #include "FIT_eeprom_pcmd3140_hw_i2c_implemention.h"
+#include "FIT_DPS368.h"
+#include "FIT_SBM100.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -289,6 +291,8 @@ int main(void)
 
   showVersion();
 
+  initDPS368();
+  initSBM100();
   FT_printf("book ok!!\r\n");
 
   responeResetSuccess();
@@ -298,6 +302,7 @@ int main(void)
 	  proccess_rxbuf();
 	  processPCMD3140();
 	  processSHT4xMeasure();
+	  processDPS368();
 	  //processLED();
 	  resetWDG();
 

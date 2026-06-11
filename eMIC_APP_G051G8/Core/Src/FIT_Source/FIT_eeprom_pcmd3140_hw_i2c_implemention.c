@@ -102,6 +102,10 @@ int8_t eeprom_pcmd3140_i2c_write(uint8_t address, const uint8_t* data,
     return (int8_t)FIT_I2C1_Master_Transmit((uint16_t)(address),(uint8_t*)data, count, 300);
 }
 
+int8_t SBM100_IsDeviceReady(uint8_t address, const uint8_t* data,
+                           uint16_t count) {
+    return (int8_t)FIT_I2C1_Master_Transmit((uint16_t)(address),(uint8_t*)data, count, 20);
+}
 /**
  * Sleep for a given number of microseconds. The function should delay the
  * execution for at least the given time, but may also sleep longer.
@@ -126,6 +130,7 @@ int8_t FIT_I2C1_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_BUSY(I2C1) == SET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
             FT_printf("i2c1 timeout\r\n");
@@ -142,9 +147,10 @@ int8_t FIT_I2C1_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
         while(LL_I2C_IsActiveFlag_TXE(I2C1)== RESET)
         {
             LL_mDelay(1);
+            resetWDG();
             if(cnt++ > timeout)
             {
-    	        FT_printf("i2c1 timeout\r\n");
+                FT_printf("i2c1 timeout\r\n");
     	     	setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
     	        eeprom_pcmd3140_i2c_init();
                 return -1;
@@ -156,9 +162,10 @@ int8_t FIT_I2C1_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_STOP(I2C1)==RESET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
-    	    FT_printf("i2c1 timeout\r\n");
+            FT_printf("i2c1 timeout\r\n");
     	 	setLedNotify(LED_NOTIFY_TYPE_I2C_TIMEOUT);
     	    eeprom_pcmd3140_i2c_init();
             return -1;
@@ -180,6 +187,7 @@ int8_t FIT_I2C1_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_BUSY(I2C1) == SET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
           FT_printf("i2c1 timeout\r\n");
@@ -196,6 +204,7 @@ int8_t FIT_I2C1_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
         while(LL_I2C_IsActiveFlag_RXNE(I2C1) == RESET)
         {
             LL_mDelay(1);
+            resetWDG();
             if(cnt++ > timeout)
             {
                 FT_printf("i2c1 timeout\r\n");
@@ -211,6 +220,7 @@ int8_t FIT_I2C1_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     while(LL_I2C_IsActiveFlag_STOP(I2C1)==RESET)
     {
         LL_mDelay(1);
+        resetWDG();
         if(cnt++ > timeout)
         {
             FT_printf("i2c1 timeout\r\n");
@@ -227,5 +237,44 @@ int8_t FIT_I2C1_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,
     return 0;
 }
 
+bool I2C1_LL_IsDeviceReady(uint8_t addr,uint16_t timeout)
+{
+
+    uint16_t cnt = 0;
+
+    if (LL_I2C_IsActiveFlag_BUSY(I2C1))
+        return false;
+
+    LL_I2C_HandleTransfer(I2C1,
+                          addr << 1,
+                          LL_I2C_ADDRSLAVE_7BIT,
+                          0,
+                          LL_I2C_MODE_AUTOEND,
+                          LL_I2C_GENERATE_START_WRITE);
+
+    while (!LL_I2C_IsActiveFlag_STOP(I2C1))
+    {
+        LL_mDelay(1);
+        resetWDG();
+        if(cnt++ > timeout)
+        {
+            FT_printf("i2c1 IsDeviceReady timeout\r\n");
+            eeprom_pcmd3140_i2c_init();
+            return false;
+        }
+
+        if (LL_I2C_IsActiveFlag_NACK(I2C1))
+        {
+            LL_I2C_ClearFlag_NACK(I2C1);
+            LL_I2C_GenerateStopCondition(I2C1);
+            eeprom_pcmd3140_i2c_init();
+            return false;
+        }
+    }
+
+    LL_I2C_ClearFlag_STOP(I2C1);
+    (I2C1->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN)));
+    return true;
+}
 
 

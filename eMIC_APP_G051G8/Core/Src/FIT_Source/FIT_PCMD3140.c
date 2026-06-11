@@ -936,7 +936,7 @@ void dumpPage(uint8_t page)
 	    }
 	    if(tempBuf[i].data!=rbuf[0])
 	    {
-		    FT_printf("prv1Value:%x\r\n",tempBuf[i].data);
+            FT_printf("prv1Value:%x\r\n",tempBuf[i].data);
 
 		    tempBuf[i].data=rbuf[0];
 	    }
@@ -1522,6 +1522,7 @@ void init_PCMD3140()
 
 			init_PCMD3140_Interrupt();
 		}
+
 	}
 	else
 	{

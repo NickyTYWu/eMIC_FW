@@ -22,4 +22,6 @@ int8_t FIT_I2C2_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,
 void getTemperatureAndHumidity();
 void getTemperatureAndHumidity(int32_t *temperature,int32_t *humidity);
 void getTemperatureAndHumidityRaw(uint16_t *temperatureRaw,uint16_t *humidityRaw,uint8_t cmd);
+bool I2C2_LL_IsDeviceReady(uint8_t addr,uint16_t timeout);
+int8_t DPS368_IsDeviceReady(uint8_t address, const uint8_t* data,uint16_t count);
 #endif /* SRC_FIT_HEADER_FIT_SENSIRION_HW_I2C_IMPLEMENTATION_H_ */

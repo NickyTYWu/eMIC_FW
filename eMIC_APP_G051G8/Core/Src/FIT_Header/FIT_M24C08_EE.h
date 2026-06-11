@@ -25,6 +25,7 @@
 #define DEBUG_MSG_ENABLE_FLAG_ADDR  PAGE0_CHECKSUM_ADDR-1
 #define WATCHDOG_ENABLE_FLAG_ADDR   DEBUG_MSG_ENABLE_FLAG_ADDR-1
 #define SHT4X_CAL_DATA_ADDR         WATCHDOG_ENABLE_FLAG_ADDR-8
+#define SMB100_REG_DATA_ADDR        SHT4X_CAL_DATA_ADDR-19
 
 #define PAGE2_START_ADDR   PAGE0_START_ADDR+PAGE0_SIZE
 #define PAGE2_SIZE 128
@@ -182,6 +183,8 @@ bool writeEnableWatchDogFlag(uint8_t flag);
 uint8_t readEnableWatchDogFlag();
 bool writeSht4xCalValue(uint8_t *calData);
 void readSht4xCalValue(uint8_t *calData);
+bool writeSBM100AllREG(uint8_t *REG);
+bool readSBM100AllReg(uint8_t *REG);
 int8_t writePage(uint8_t blockID,uint8_t *pageBuf,uint8_t numberOfByte,uint8_t pageEESize);
 //int8_t getPage(uint8_t page,uint8_t *pageBuf,uint8_t pageEESize);
 int8_t getPageFromEEprom(uint8_t page,uint8_t *pageBuf,uint8_t pageEESize);

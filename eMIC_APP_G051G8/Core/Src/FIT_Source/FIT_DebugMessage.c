@@ -17,6 +17,8 @@
 #include "ftm.h"
 #include "ftm_ringbuff.h"
 #include "sht4x.h"
+#include "FIT_DPS368.h"
+#include "FIT_SBM100.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -35,6 +37,7 @@ extern int version;
 bool bEnterUpgradeMode=false;
 bool bShowDebugMSG=false;
 extern RingBuffer rb;
+extern uint8_t coeffData[19];
 
 void init_DebugMessage()
 {
@@ -215,7 +218,6 @@ void put_s(char *buf,int len)
 	}
 }
 
-
 void FTM_printf(const char *fmt, ...)
 {
 	va_list args;
@@ -375,7 +377,7 @@ void responeSensirionWithCMD(uint8_t cmd)
     uint8_t RESPONSE_CMD_BUF[4];
 
     getTemperatureAndHumidityRaw(&temperatureRaw,&humidityRaw,cmd);
-    FT_printf("temperatureRaw:%x humidityRaw:x\r\n",temperatureRaw,humidityRaw);
+    //FT_printf("temperatureRaw:%x humidityRaw:x\r\n",temperatureRaw,humidityRaw);
     RESPONSE_CMD_BUF[0]=(temperatureRaw&0xff00)>>8;
     RESPONSE_CMD_BUF[1]=(temperatureRaw&0xff);
     RESPONSE_CMD_BUF[2]=(humidityRaw&0xff00)>>8;
@@ -852,6 +854,47 @@ void responseReadCal()
     GenCommand(READ_SHT4X_CAL_RESPONSE_CMD, RESPONSE_CMD_BUF,8);
 }
 
+
+void responseReadDPS368Coeff()
+{
+    GenCommand(READ_DPS368_COEFF_RESPONSE_CMD, coeffData,19);
+}
+
+void responseReadDPS368TempPressure(uint8_t *tempResult,uint8_t *pressureResult,uint8_t tempOSR,uint8_t pressureOSR)
+{
+    uint8_t RESPONSE_CMD_BUF[8];
+
+    memcpy(RESPONSE_CMD_BUF,tempResult,3);
+    memcpy(&RESPONSE_CMD_BUF[3],pressureResult,3);
+    RESPONSE_CMD_BUF[6]=tempOSR;
+    RESPONSE_CMD_BUF[7]=pressureOSR;
+    GenCommand(READ_DPS368_TEMP_AND_PRESSURE_RESPONS_CMD, RESPONSE_CMD_BUF,8);
+}
+
+void responseReadSBM100(uint8_t type)
+{
+    uint8_t RESPONSE_CMD_BUF[20];
+
+    checkSBM100isReady();
+
+    if(type==0x00)
+    {
+        dumpSBM100REG();
+        RESPONSE_CMD_BUF[0]=0x01;
+        RESPONSE_CMD_BUF[1]=isSBM100Exist();
+        getSBM100REGFromRAM(&RESPONSE_CMD_BUF[2]);
+    }
+    else
+    {
+        RESPONSE_CMD_BUF[0]=0x00;
+        RESPONSE_CMD_BUF[1]=isSBM100Exist();
+        readSBM100AllReg(&RESPONSE_CMD_BUF[2]);
+    }
+
+    GenCommand(READ_SBM100_BLOCK_RESPONSE_CMD, RESPONSE_CMD_BUF,20);
+}
+
+
 uint8_t ProcessPacket()
 {
     uint8_t ret = 0;
@@ -865,7 +908,18 @@ uint8_t ProcessPacket()
         if(RCV_PACKET[1]==0x01)
             responeSensirion();
         else
+        {
+            float Temp;
+            int32_t intTemp;
             startMeasure(RCV_PACKET[3]);
+
+            memcpy(&Temp,&RCV_PACKET[4],4);
+            intTemp=Temp*1000;
+
+            //FT_printf("limited temp=%f,%d \n",Temp,intTemp);
+
+            setSafetyTemp(intTemp);
+        }
         break;
         case WRITE_EEPROM_BLOCK_CMD:
         {
@@ -985,6 +1039,40 @@ uint8_t ProcessPacket()
         case READ_SHT4X_CAL_CMD:
         responseReadCal();
 		break;
+        case READ_DPS368_COEFF_CMD:
+        responseReadDPS368Coeff();
+        break;
+        case READ_DPS368_TEMP_AND_PRESSURE_CMD:
+        startMeasureDPS368(RCV_PACKET[3],RCV_PACKET[4]);
+        break;
+        case WRITE_SBM100_BLOCK_CMD:
+        bool result;
+        checkSBM100isReady();
+
+        if(!isSBM100Exist())
+        {
+            ResponseACK(WRITE_SBM100_BLOCK_CMD,0x02);
+            return 0;
+        }
+
+        if(RCV_PACKET[3]==0x00)
+            result=setSBM100REG(&RCV_PACKET[4]);
+        else
+            result=writeSBM100AllREG(&RCV_PACKET[4]);
+
+
+        if(result)
+        {
+            ResponseACK(WRITE_SBM100_BLOCK_CMD,CMD_SUCCESS);
+        }
+        else
+        {
+            ResponseACK(WRITE_SBM100_BLOCK_CMD,CMD_FAIL);
+        }
+        break;
+        case READ_SBM100_BLOCK_CMD:
+        responseReadSBM100(RCV_PACKET[3]);
+        break;
 #if 0
         case WRITE_MODEL_NUMBER_CMD:
         if(writeModelNumber(RCV_PACKET[3],&RCV_PACKET[4],RCV_PACKET[PAYLOADLEN]-2))
@@ -1299,10 +1387,10 @@ uint8_t PreparePacketToParse()
             }
             rcv_index++;
         }
-        else
-        {
-        	ftm_get_conmmand(Read_Byte);
-        }
+        //else
+        //{
+              //ftm_get_conmmand(Read_Byte);
+        //}
 
         //if(rcv_index>=RCV_CMD_MAX_LEN)
         //{
@@ -1320,7 +1408,7 @@ void proccess_rxbuf()
 
 	if(PreparePacketToParse()==0x01)
     {
-    	ftm_clear_cmd_line();
+        //ftm_clear_cmd_line();
     	ProcessPacket();
     }
 

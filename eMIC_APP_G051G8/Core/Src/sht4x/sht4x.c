@@ -91,6 +91,12 @@ uint8_t currentMeasureCMD;
 uint32_t blockingTime;
 uint32_t startTickCount;
 uint8_t reTryCount=0;
+int32_t safeTemp=65000;
+
+void setSafetyTemp(int32_t temp)
+{
+	safeTemp=temp;
+}
 
 bool isSafetyTemp()
 {
@@ -100,7 +106,7 @@ bool isSafetyTemp()
 
     notifySensirion(temperature, humidity);
 
-    if(temperature>=65000)
+    if(temperature>=safeTemp)
     {
         return false;
     }

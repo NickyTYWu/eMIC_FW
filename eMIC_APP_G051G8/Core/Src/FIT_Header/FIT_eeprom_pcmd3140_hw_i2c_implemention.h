@@ -19,4 +19,6 @@ int8_t eeprom_pcmd3140_i2c_write(uint8_t address, const uint8_t* data,uint16_t c
 void eeprom_pcmd3140_sleep_usec(uint32_t useconds);
 int8_t FIT_I2C1_Master_Transmit(uint8_t device_id ,uint8_t *pdata, uint8_t size,uint16_t timeout);
 int8_t FIT_I2C1_Master_Receive(uint8_t device_id , uint8_t *pdata, uint8_t size,uint16_t timeout);
+bool I2C1_LL_IsDeviceReady(uint8_t addr,uint16_t timeout);
+int8_t SBM100_IsDeviceReady(uint8_t address, const uint8_t* data,uint16_t count);
 #endif /* SRC_FIT_HEADER_FIT_EEPROM_PCMD3140_HW_I2C_IMPLEMENTION_H_ */

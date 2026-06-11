@@ -142,6 +142,7 @@ int16_t fit_sht4x_soft_reset();
 void startMeasure(uint8_t cmd);
 void processSHT4xMeasure();
 bool isSafetyTemp();
+void setSafetyTemp(int32_t temp);
 #ifdef __cplusplus
 }
 #endif

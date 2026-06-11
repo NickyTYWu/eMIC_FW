@@ -158,7 +158,7 @@ bool mem_flash_erase(uint32_t addr,bool block)
 
     if (result != 0)
     {
-	    FT_printf("earse error:%d\r\n",result);
+        FT_printf("earse error:%d\r\n",result);
         return false;
     }
 
@@ -195,7 +195,7 @@ bool mem_flash_write(uint32_t addr, uint8_t *data,uint32_t DataSize)
         }
         else
         {
-    	    FT_printf("flash error:%d\r\n",result);
+            FT_printf("flash error:%d\r\n",result);
             ubFLASH_Lock();
             return false;
         }

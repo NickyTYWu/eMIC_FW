@@ -27,4 +27,5 @@ void getPressureResult();
 void getTempResult();
 uint8_t getRDY();
 uint8_t getMeasureBlockingTime(uint8_t OSR);
+void checkDPS368isReady();
 #endif /* SRC_FIT_HEADER_FIT_DPS368_EE_H_ */

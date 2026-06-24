@@ -822,17 +822,21 @@ bool enableFWLog(uint8_t bEnable)
 
 bool enableWatchdog(uint8_t bEnable)
 {
+    uint8_t wagchDogFlag=readEnableWatchDogFlag();
 
-	if(readEnableWatchDogFlag()!=bEnable)
-	{
-	    if(writeEnableWatchDogFlag(bEnable))
-	    {
+    if(wagchDogFlag!=bEnable)
+    {
+        if(writeEnableWatchDogFlag(bEnable))
+        {
             //NVIC_SystemReset();
-            return true;
-	    }
-	}
+            if(wagchDogFlag>0x01&&bEnable==0x00)
+                return false;
 
-	return false;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool writeCal(uint8_t *calData)
@@ -857,6 +861,7 @@ void responseReadCal()
 
 void responseReadDPS368Coeff()
 {
+    readCoeff();
     GenCommand(READ_DPS368_COEFF_RESPONSE_CMD, coeffData,19);
 }
 

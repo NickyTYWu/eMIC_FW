@@ -6,7 +6,7 @@
 #include "FIT_SysTick.h"
 
 bool bDPS368Exist=false;
-uint8_t coeffData[19];
+uint8_t coeffData[19]={0};
 uint8_t measureCMD;
 bool bStartMeasureDPS368=false;
 bool bWaitRdy=false;
@@ -50,6 +50,14 @@ void readProductID()
 void readCoeff()
 {
     uint8_t reg[1];
+
+    checkDPS368isReady();
+
+    if(!bDPS368Exist)
+    {
+        coeffData[0]=0;
+        return;
+    }
 
     FT_printf("Coeff:");
 
@@ -240,6 +248,23 @@ void processDPS368()
     }
 }
 
+void checkDPS368isReady()
+{
+    if(bDPS368Exist)
+    {
+        return;
+    }
+
+    if(!I2C2_LL_IsDeviceReady(DPS368_SLAVE_ADDR, 10))
+    {
+        bDPS368Exist=false;
+        FT_printf("DPS368 is not exist!!");
+    }
+    else
+    {
+        bDPS368Exist=true;;
+    }
+}
 
 void initDPS368()
 {
@@ -254,7 +279,7 @@ void initDPS368()
         bDPS368Exist=true;
         readTMP_COEF_SRCE();
         readProductID();
-        readCoeff();
+        //readCoeff();
     }
 }
 

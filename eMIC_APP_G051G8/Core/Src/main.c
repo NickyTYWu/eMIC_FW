@@ -52,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-const char APP[]="FIT_V1APP_VER_R0004_BETA_00@";
+const char APP[]="FIT_V1APP_VER_R0005_BETA_00@";
 int version=0;
 int beta=0;
 bool bWatchdogReset=false;
